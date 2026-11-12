@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>인턴 공고 보드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: 한 줄짜리 원장(ledger). 왼쪽 칸은 지금 정렬 기준(올라온 시각 또는 D-day)을 크게 보여 준다. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #141a22;
+  --muted: #5d6876;
+  --line: #dde2e8;
+  --accent: #0c6b5e;
+  --accent-soft: #e2f1ee;
+  --urgent: #b4321f;
+  --urgent-soft: #fbe9e5;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --c-vc: #1f7a3d;  --c-vc-bg: #e3f3e8;
+  --c-pe: #5b3fa8;  --c-pe-bg: #ece7f8;
+  --c-ib: #1d5fae;  --c-ib-bg: #e3edf9;
+  --c-am: #a35310;  --c-am-bg: #f8ebdd;
+  --c-sec: #7a6a00; --c-sec-bg: #f5f0d2;
+  --c-adv: #0e6a78; --c-adv-bg: #ddf1f4;
+  --c-acct: #a12d5c; --c-acct-bg: #f8e4ec;
+  --c-etc: #55606d; --c-etc-bg: #eceff2;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1419; --surface: #161d25; --ink: #e6ebf0; --muted: #94a0ad; --line: #26303b;
+    --accent: #4cc3ad; --accent-soft: #123a34;
+    --urgent: #ff8a73; --urgent-soft: #3d1c16; --warn: #e8b85c; --warn-soft: #3a2c10;
+    --c-vc: #7fd59a; --c-vc-bg: #16301f; --c-pe: #b9a5f2; --c-pe-bg: #2a2244;
+    --c-ib: #8fbcf2; --c-ib-bg: #172a42; --c-am: #f0ad6e; --c-am-bg: #3a2614;
+    --c-sec: #e0cf6a; --c-sec-bg: #33300f; --c-etc: #a9b3bf; --c-etc-bg: #222a33;
+    --c-adv: #6fd3e0; --c-adv-bg: #12333a; --c-acct: #f29bbd; --c-acct-bg: #3b1828;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1419; --surface: #161d25; --ink: #e6ebf0; --muted: #94a0ad; --line: #26303b;
+  --accent: #4cc3ad; --accent-soft: #123a34;
+  --urgent: #ff8a73; --urgent-soft: #3d1c16; --warn: #e8b85c; --warn-soft: #3a2c10;
+  --c-vc: #7fd59a; --c-vc-bg: #16301f; --c-pe: #b9a5f2; --c-pe-bg: #2a2244;
+  --c-ib: #8fbcf2; --c-ib-bg: #172a42; --c-am: #f0ad6e; --c-am-bg: #3a2614;
+  --c-sec: #e0cf6a; --c-sec-bg: #33300f; --c-etc: #a9b3bf; --c-etc-bg: #222a33;
+  --c-adv: #6fd3e0; --c-adv-bg: #12333a; --c-acct: #f29bbd; --c-acct-bg: #3b1828;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+[hidden] { display: none !important; }
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.asof { color: var(--muted); font-size: 13px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.asof b { color: var(--ink); font-weight: 600; }
+.stale { font-size: 11px; color: var(--warn); background: var(--warn-soft); padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+
+/* 요약 띠 */
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.summary button { all: unset; cursor: pointer; padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--line); }
+.summary button:first-child { border-left: 0; }
+.summary button:hover { background: var(--bg); }
+.summary button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.summary button[aria-pressed="true"] { box-shadow: inset 0 -3px 0 var(--accent); }
+.summary .k { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+.summary .v { font-family: var(--f-mono); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.summary .v.urgent { color: var(--urgent); }
+.summary .v.accent { color: var(--accent); }
+
+/* 정렬 탭 */
+.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 3px; gap: 3px; }
+.tabs button { all: unset; cursor: pointer; font-size: 14px; font-weight: 600; padding: 7px 16px; border-radius: 6px; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.count { font-size: 13px; color: var(--muted); }
+
+/* 필터 */
+.filters { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row .lab { font-size: 12px; color: var(--muted); width: 44px; flex: none; letter-spacing: 0.04em; }
+.chip { all: unset; cursor: pointer; font-size: 13px; padding: 5px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); white-space: nowrap; }
+.chip:hover { border-color: var(--muted); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; opacity: 0.7; margin-left: 4px; }
+.search { flex: 1 1 220px; min-width: 0; font: inherit; font-size: 14px; padding: 7px 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.search:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+label.tog { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+label.tog input { accent-color: var(--accent); }
+
+/* 목록 */
+.day { display: flex; flex-direction: column; }
+.day + .day { margin-top: 18px; }
+.day h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; letter-spacing: 0.02em; }
+.day h2 .d { color: var(--ink); font-size: 14px; font-variant-numeric: tabular-nums; }
+.day.fresh h2 .d { color: var(--accent); }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.day.fresh .list { border-color: var(--accent); }
+.item { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 18px; border-top: 1px solid var(--line); align-items: start; }
+.item:first-child { border-top: 0; }
+.item.closed { opacity: 0.55; }
+.key { font-size: 13px; font-weight: 600; text-align: center; padding: 4px 2px; border-radius: 6px; background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.key.new { background: var(--accent-soft); color: var(--accent); }
+.key.hot { background: var(--urgent-soft); color: var(--urgent); }
+.key.soon { background: var(--warn-soft); color: var(--warn); }
+.key.text { font-family: var(--f-body); font-weight: 500; font-size: 12px; }
+.main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.cat { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; letter-spacing: 0.03em; }
+.cat.VC { color: var(--c-vc); background: var(--c-vc-bg); }
+.cat.PE { color: var(--c-pe); background: var(--c-pe-bg); }
+.cat.IB { color: var(--c-ib); background: var(--c-ib-bg); }
+.cat.AM { color: var(--c-am); background: var(--c-am-bg); }
+.cat.sec { color: var(--c-sec); background: var(--c-sec-bg); }
+.cat.adv { color: var(--c-adv); background: var(--c-adv-bg); }
+.cat.acct { color: var(--c-acct); background: var(--c-acct-bg); }
+.cat.etc { color: var(--c-etc); background: var(--c-etc-bg); }
+.src.official { color: var(--ink); font-weight: 600; }
+.also { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.also a { color: var(--muted); }
+.also a:hover { color: var(--ink); }
+.lvl { font-weight: 600; color: var(--accent); }
+.lvl.pt { color: var(--warn); }
+.deal { font-size: 11px; font-weight: 600; color: var(--ink); border: 1px solid var(--line); padding: 0 6px; border-radius: 4px; }
+.company { font-weight: 600; color: var(--ink); font-size: 13px; }
+.side { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.side.hot { color: var(--urgent); font-weight: 600; }
+.title { color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+.title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.apply { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 12px; }
+.mailtag { font-size: 11px; font-weight: 600; color: var(--urgent); background: var(--urgent-soft); padding: 2px 8px; border-radius: 99px; }
+.email { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--ink); }
+.email span { user-select: all; overflow-wrap: anywhere; }
+.copy { all: unset; cursor: pointer; font-family: var(--f-body); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); padding: 1px 7px; border-radius: 4px; flex: none; }
+.copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site { color: var(--muted); }
+.empty { padding: 40px 18px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+footer { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary button:nth-child(3) { border-left: 0; }
+  .summary button:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .item { grid-template-columns: 64px minmax(0, 1fr); padding: 12px 14px; gap: 4px 12px; }
+  .apply { grid-column: 2; align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+  .row .lab { width: 100%; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; text-align: center; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .item { transition: background 0.12s; }
+  .item:hover { background: var(--bg); }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>인턴 공고 보드</h1>
+      <div class="asof">
+        <span>마지막 수집 <b id="asof"></b></span>
+        <span class="stale" id="stale" hidden></span>
+      </div>
+    </div>
+    <div class="asof">인턴 · 아르바이트 · 파트타이머 — 빅4·증권사 홈페이지, VC협회, 금투협, KKB</div>
+  </header>
+
+  <section class="summary" aria-label="요약">
+    <button type="button" data-quick="fresh" aria-pressed="false"><span class="k">24시간 내 새 공고</span><span class="v accent" id="s-fresh">0</span></button>
+    <button type="button" data-quick="mail" aria-pressed="false"><span class="k">메일 지원 (롤링)</span><span class="v urgent" id="s-mail">0</span></button>
+    <button type="button" data-quick="soon" aria-pressed="false"><span class="k">마감 D-3 이내</span><span class="v urgent" id="s-soon">0</span></button>
+    <button type="button" data-quick="" aria-pressed="false"><span class="k">지원 가능한 공고</span><span class="v" id="s-open">0</span></button>
+  </section>
+
+  <section class="filters" aria-label="필터">
+    <div class="row"><span class="lab">기간</span><div class="row" id="f-period"></div></div>
+    <div class="row"><span class="lab">유형</span><div class="row" id="f-lvl"></div></div>
+    <div class="row"><span class="lab">업권</span><div class="row" id="f-cat"></div></div>
+    <div class="row"><span class="lab">출처</span><div class="row" id="f-src"></div></div>
+    <div class="row">
+      <input class="search" id="q" type="search" placeholder="회사·직무 검색 (예: IMM, 리서치, M&A)" aria-label="검색">
+      <label class="tog"><input type="checkbox" id="deal-only"> 투자·딜 직무만</label>
+      <label class="tog"><input type="checkbox" id="hide-closed" checked> 마감된 공고 숨기기</label>
+    </div>
+  </section>
+
+  <div class="tabbar">
+    <div class="tabs" role="tablist" aria-label="정렬">
+      <button type="button" role="tab" id="tab-new" data-sort="new" aria-selected="true">올라온 순</button>
+      <button type="button" role="tab" id="tab-due" data-sort="due" aria-selected="false">D-day 순</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+  <main id="out"></main>
+
+  <footer>같은 공고가 회사 홈페이지와 KKB·금투협 등에 함께 올라오면 홈페이지 공고 하나만 보이고, 나머지는 「같은 공고」 링크로 붙습니다. 제목을 누르면 원문으로 이동합니다. 24시간이 안 된 공고는 올라온 지 몇 시간 됐는지로 표시합니다. 금투협·KKB는 게시 시각, VC협회는 게시판에 시각이 없어 수집 시각 기준(≈)입니다.</footer>
+</div>
+
+<script>
+const DATA = [{"id": "kpmg:KPMG00000000000000000000001011", "source": "kpmg", "title": "[인턴] Deal Adv 3본부 인턴 채용", "url": "https://career.kr.kpmg.com/hr/rec/recruit/jobopen/controller/candidate/JobOpen310WebController/DetailInit.hr?jobopen_id=KPMG00000000000000000000001011&receive_div_cd=N", "company": "삼정KPMG", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-20", "apply_email": "", "apply_method": "site", "category": "M&A자문", "level": "인턴", "front": true, "tags": [], "source_name": "삼정KPMG 홈페이지", "official": true, "also": []}, {"id": "kpmg:KPMG00000000000000000000000995", "source": "kpmg", "title": "[인턴] 2026년 ADC 감사업무보조 단기 인턴 채용", "url": "https://career.kr.kpmg.com/hr/rec/recruit/jobopen/controller/candidate/JobOpen310WebController/DetailInit.hr?jobopen_id=KPMG00000000000000000000000995&receive_div_cd=N", "company": "삼정KPMG", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-19", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": false, "tags": ["백오피스"], "source_name": "삼정KPMG 홈페이지", "official": true, "also": []}, {"id": "deloitte:5245", "source": "deloitte", "title": "세무자문부문 M&A Tax 인턴", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5245", "company": "딜로이트 안진", "posted_at": "2026-11-10", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-12", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": true, "tags": [], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "deloitte:5242", "source": "deloitte", "title": "세무자문부문 서류 검토 아르바이트", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5242", "company": "딜로이트 안진", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-20", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "알바", "front": false, "tags": [], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "deloitte:5241", "source": "deloitte", "title": "회계감사부문 Audit DC 감사지원업무(조회서 조서화) 인턴 채용", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5241", "company": "딜로이트 안진", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-19", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": false, "tags": [], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "deloitte:5240", "source": "deloitte", "title": "회계감사부문 Audit DC 감사지원업무(조회서 수발신) 인턴 채용", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5240", "company": "딜로이트 안진", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-19", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": false, "tags": [], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "deloitte:5238", "source": "deloitte", "title": "회계감사부문 AIS(계리 전문 조직) 인턴 채용", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5238", "company": "딜로이트 안진", "posted_at": "2026-10-30", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-27", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": false, "tags": [], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "deloitte:5213", "source": "deloitte", "title": "T&T부문 기업 Risk Management 및 IT/DX 분야 컨설팅 계약직(전환형)", "url": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5213", "company": "딜로이트 안진", "posted_at": "2026-09-30", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-12-31", "apply_email": "", "apply_method": "site", "category": "회계법인", "level": "인턴", "front": false, "tags": ["백오피스"], "source_name": "안진 홈페이지", "official": true, "also": []}, {"id": "nh:131495", "source": "nh", "title": "NH투자증권 2026년 하반기 PB직무 체험형 인턴 채용", "url": "https://nhqv.recruiter.co.kr/career/jobs/131495", "company": "NH투자증권", "posted_at": "2026-10-16", "posted_time": "2026-10-16T13:50:00+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-23", "apply_email": "", "apply_method": "site", "category": "증권", "level": "인턴", "front": false, "tags": [], "source_name": "NH투자증권 홈페이지", "official": true, "also": []}, {"id": "shinhan:4176801", "source": "shinhan", "title": "고객지원센터(전문상담원) 경력직 파트타이머(단시간) 공개채용", "url": "https://recruit.shinhansec.com/recruit/view.do?annoId=4176801", "company": "신한투자증권", "posted_at": "2026-11-06", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-20", "apply_email": "", "apply_method": "site", "category": "증권", "level": "알바", "front": false, "tags": [], "source_name": "신한투자증권 홈페이지", "official": true, "also": []}, {"id": "shinhan:4178220", "source": "shinhan", "title": "브랜드전략부 파트타이머 공개채용(디자인)", "url": "https://recruit.shinhansec.com/recruit/view.do?annoId=4178220", "company": "신한투자증권", "posted_at": "2026-11-10", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-23", "apply_email": "", "apply_method": "site", "category": "증권", "level": "알바", "front": false, "tags": ["백오피스"], "source_name": "신한투자증권 홈페이지", "official": true, "also": []}, {"id": "shinhan:4175211", "source": "shinhan", "title": "리서치본부 RA 공개채용", "url": "https://recruit.shinhansec.com/recruit/view.do?annoId=4175211", "company": "신한투자증권", "posted_at": "", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-08", "apply_email": "", "apply_method": "site", "category": "증권", "level": "인턴", "front": true, "tags": ["마감"], "source_name": "신한투자증권 홈페이지", "official": true, "also": []}, {"id": "kvca:3416", "source": "kvca", "title": "(주)리젠트파트너스 투자팀 인턴 채용 공고", "url": "https://www.kvca.or.kr/Program/user_board/listbody.html?a_gb=board&a_cd=7&a_item=0&sm=3_2&type=R&po_no=3416", "company": "리젠트파트너스", "posted_at": "2026-11-05", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-25", "apply_email": "rkoo@regentpartners.vc", "apply_method": "email", "category": "VC", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "VC협회", "official": false, "also": []}, {"id": "kvca:3411", "source": "kvca", "title": "카카오벤처스 기획관리팀 체험형 인턴", "url": "https://www.kvca.or.kr/Program/user_board/listbody.html?a_gb=board&a_cd=7&a_item=0&sm=3_2&type=R&po_no=3411", "company": "카카오벤처스", "posted_at": "2026-11-02", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-22", "apply_email": "", "apply_method": "", "category": "VC", "level": "인턴", "front": false, "tags": ["백오피스"], "source_name": "VC협회", "official": false, "also": []}, {"id": "kvca:3398", "source": "kvca", "title": "프리미어파트너스(유) BIO본부 Research Associate 인턴 채용", "url": "https://www.kvca.or.kr/Program/user_board/listbody.html?a_gb=board&a_cd=7&a_item=0&sm=3_2&type=R&po_no=3398", "company": "프리미어파트너스(유)", "posted_at": "2026-10-20", "posted_time": "", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-12-31", "apply_email": "bd@premierpartners.co.kr", "apply_method": "email", "category": "VC", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "VC협회", "official": false, "also": []}, {"id": "kofia:43116", "source": "kofia", "title": "[상상인증권] 리서치센터 인턴 수시 채용 (11/11~11/25)", "url": "https://www.kofia.or.kr/brd/m_96/view.do?seq=43116", "company": "상상인증권", "posted_at": "2026-11-12", "posted_time": "2026-11-12T08:38:59+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-25", "apply_email": "", "apply_method": "site", "category": "증권", "level": "인턴", "front": true, "tags": [], "source_name": "금투협", "official": false, "also": []}, {"id": "kofia:43107", "source": "kofia", "title": "[우리투자증권] 광주금융센터 문서 분류 아르바이트", "url": "https://www.kofia.or.kr/brd/m_96/view.do?seq=43107", "company": "우리투자증권", "posted_at": "2026-11-11", "posted_time": "2026-11-11T14:38:28+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-15", "apply_email": "", "apply_method": "site", "category": "증권", "level": "알바", "front": false, "tags": ["백오피스"], "source_name": "금투협", "official": false, "also": []}, {"id": "kofia:43103", "source": "kofia", "title": "[KB자산운용] 주식운용본부 리서치실 인턴 채용 (~11/16)", "url": "https://www.kofia.or.kr/brd/m_96/view.do?seq=43103", "company": "케이비자산운용", "posted_at": "2026-11-11", "posted_time": "2026-11-11T14:00:36+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-16", "apply_email": "", "apply_method": "site", "category": "AM", "level": "인턴", "front": true, "tags": [], "source_name": "금투협", "official": false, "also": []}, {"id": "kofia:43091", "source": "kofia", "title": "[LS증권] 체험형인턴 수시채용(리서치(기업분석RA)) (~11/16(월))", "url": "https://www.kofia.or.kr/brd/m_96/view.do?seq=43091", "company": "엘에스증권", "posted_at": "2026-11-10", "posted_time": "2026-11-10T16:46:01+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-16", "apply_email": "recruit@ls-sec.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "금투협", "official": false, "also": []}, {"id": "kkb:654544", "source": "kkb", "title": "[한국투자리얼에셋운용] 파트타이머 채용 공고 (~11/18)", "url": "https://cafe.naver.com/kkbjob/654544", "company": "한국투자리얼에셋운용", "posted_at": "2026-11-11", "posted_time": "2026-11-11T13:30:07+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-18", "apply_email": "r_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654478", "source": "kkb", "title": "[BNK투자증권] 부동산금융본부 인턴 채용 (~11/16)", "url": "https://cafe.naver.com/kkbjob/654478", "company": "BNK투자증권", "posted_at": "2026-11-10", "posted_time": "2026-11-10T13:08:32+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-16", "apply_email": "chson@bnkfn.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654457", "source": "kkb", "title": "IMM인베스트먼트 펀드운용2본부 인프라 사무보조 계약직 채용(~11/15) - 재공고", "url": "https://cafe.naver.com/kkbjob/654457", "company": "IMM인베 인사담당", "posted_at": "2026-11-09", "posted_time": "2026-11-09T16:46:33+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-15", "apply_email": "recruit@imm.co.kr", "apply_method": "email", "category": "VC", "level": "알바", "front": false, "tags": ["메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654258", "source": "kkb", "title": "[BNK투자증권] 리서치센터 인턴 모집 (마감)", "url": "https://cafe.naver.com/kkbjob/654258", "company": "BNK투자증권", "posted_at": "2026-11-06", "posted_time": "2026-11-06T09:56:05+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "증권", "level": "인턴", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654227", "source": "kkb", "title": "[한국투자신탁운용] 해외투자전략부 파트타이머 채용공고 (~11/10)", "url": "https://cafe.naver.com/kkbjob/654227", "company": "한국투자신탁운용", "posted_at": "2026-11-05", "posted_time": "2026-11-05T13:28:26+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-10", "apply_email": "t_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654226", "source": "kkb", "title": "[NH투자증권] 퇴직연금 사무보조 아르바이트 채용(지원마감)", "url": "https://cafe.naver.com/kkbjob/654226", "company": "NH투자증권", "posted_at": "2026-11-05", "posted_time": "2026-11-05T12:43:38+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "증권", "level": "알바", "front": false, "tags": ["마감", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654187", "source": "kkb", "title": "[인턴] 에픽플랫폼파트너스 - 모집 완료", "url": "https://cafe.naver.com/kkbjob/654187", "company": "알베kkb", "posted_at": "2026-11-05", "posted_time": "2026-11-05T06:40:19+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654179", "source": "kkb", "title": "KB증권 패시브영업1부 아르바이트(단기근로자) 모집", "url": "https://cafe.naver.com/kkbjob/654179", "company": "KB증권 패시브영업", "posted_at": "2026-11-04", "posted_time": "2026-11-04T16:36:10+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-20", "apply_email": "jmpark@kbfg.com", "apply_method": "email", "category": "증권", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:654003", "source": "kkb", "title": "[마감] 어펄마캐피탈 (구 스탠다드차타드프라이빗에쿼티) 펀드 관리팀 인턴 채용", "url": "https://cafe.naver.com/kkbjob/654003", "company": "Affirma Capital", "posted_at": "2026-11-03", "posted_time": "2026-11-03T09:53:23+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "PE", "level": "인턴", "front": false, "tags": ["마감", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653950", "source": "kkb", "title": "[E&F PE] 리서치 인턴 채용", "url": "https://cafe.naver.com/kkbjob/653950", "company": "E&F PE", "posted_at": "2026-11-02", "posted_time": "2026-11-02T13:50:52+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-16", "apply_email": "dy.park@enfpe.com", "apply_method": "email", "category": "PE", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653746", "source": "kkb", "title": "[알파자산운용] PE본부 채용전환용 인턴 채용(~11월30일)", "url": "https://cafe.naver.com/kkbjob/653746", "company": "알파자산운용", "posted_at": "2026-10-31", "posted_time": "2026-10-31T12:40:01+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-11-30", "apply_email": "", "apply_method": "", "category": "PE", "level": "인턴", "front": true, "tags": [], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653317", "source": "kkb", "title": "[민트투자자문 주식회사] IPO부문 직원 채용 공고(마감)", "url": "https://cafe.naver.com/kkbjob/653317", "company": "민트투자자문 주식회사", "posted_at": "2026-10-27", "posted_time": "2026-10-27T08:41:20+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653296", "source": "kkb", "title": "[래딕스에쿼티파트너스] 체험형 인턴 채용 공고 (~10/28)", "url": "https://cafe.naver.com/kkbjob/653296", "company": "래딕스에쿼티파트너스", "posted_at": "2026-10-26", "posted_time": "2026-10-26T14:26:41+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-28", "apply_email": "yslee@radixep.co.kr", "apply_method": "email", "category": "PE", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653089", "source": "kkb", "title": "[파이온테크] 2026 겨울 인턴 모집 공고 (ETF LP/시장조성/차익거래/HFT/Algo Trading OMS 개발, 2026.10.24 ~ 채용 시까지)", "url": "https://cafe.naver.com/kkbjob/653089", "company": "파이온테크", "posted_at": "2026-10-24", "posted_time": "2026-10-24T17:36:59+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": [], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:653056", "source": "kkb", "title": "[한양증권] 채권부 인턴사원 채용공고", "url": "https://cafe.naver.com/kkbjob/653056", "company": "한양증권", "posted_at": "2026-10-23", "posted_time": "2026-10-23T16:22:37+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-26", "apply_email": "jihyechoi@hygood.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652860", "source": "kkb", "title": "[솔리드스톤] 솔리드스톤 파트너스 모집", "url": "https://cafe.naver.com/kkbjob/652860", "company": "솔리드스톤", "posted_at": "2026-10-22", "posted_time": "2026-10-22T12:30:41+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": [], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652810", "source": "kkb", "title": "[미래에셋증권] 기업금융본부 사무보조 아르바이트 채용(ASAP)", "url": "https://cafe.naver.com/kkbjob/652810", "company": "미래에셋증권", "posted_at": "2026-10-21", "posted_time": "2026-10-21T17:22:00+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "chiho.oh@miraeasset.com", "apply_method": "email", "category": "IB", "level": "알바", "front": false, "tags": ["ASAP", "메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652807", "source": "kkb", "title": "[한국투자신탁운용] 홍보실/투자지원담당 파트타이머 채용공고 (~10/28)", "url": "https://cafe.naver.com/kkbjob/652807", "company": "한국투자신탁운용", "posted_at": "2026-10-21", "posted_time": "2026-10-21T15:52:08+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-28", "apply_email": "t_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652806", "source": "kkb", "title": "[한국투자신탁운용] 경영관리실 파트타이머 채용공고(~10/28)", "url": "https://cafe.naver.com/kkbjob/652806", "company": "한국투자신탁운용", "posted_at": "2026-10-21", "posted_time": "2026-10-21T15:50:27+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-28", "apply_email": "t_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652720", "source": "kkb", "title": "[BNK투자증권] PF관리부 인턴 채용(~10/26)", "url": "https://cafe.naver.com/kkbjob/652720", "company": "BNK투자증권", "posted_at": "2026-10-20", "posted_time": "2026-10-20T16:25:50+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-26", "apply_email": "un@bnkfn.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652717", "source": "kkb", "title": "[AIA생명] CEO Office Intern", "url": "https://cafe.naver.com/kkbjob/652717", "company": "AIA생명", "posted_at": "2026-10-20", "posted_time": "2026-10-20T15:01:34+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "site", "category": "기타", "level": "인턴", "front": false, "tags": [], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652632", "source": "kkb", "title": "[키움증권] 재산신탁팀 사무보조 아르바이트 모집 -마감", "url": "https://cafe.naver.com/kkbjob/652632", "company": "키움증권", "posted_at": "2026-10-20", "posted_time": "2026-10-20T10:50:41+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-30", "apply_email": "ktrust@kiwoom.com", "apply_method": "email", "category": "증권", "level": "알바", "front": false, "tags": ["메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652577", "source": "kkb", "title": "[미래에셋증권]  Global채권상품본부 Global FI Sales팀 아르바이트 채용", "url": "https://cafe.naver.com/kkbjob/652577", "company": "미래에셋증권", "posted_at": "2026-10-19", "posted_time": "2026-10-19T12:51:24+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-22", "apply_email": "globalsales@miraeasset.com", "apply_method": "email", "category": "증권", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652225", "source": "kkb", "title": "[한국투자신탁운용] 상품전략본부 파트타이머 채용공고 (~10/21)", "url": "https://cafe.naver.com/kkbjob/652225", "company": "한국투자신탁운용", "posted_at": "2026-10-15", "posted_time": "2026-10-15T16:27:20+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-21", "apply_email": "t_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:652064", "source": "kkb", "title": "[민트투자자문 주식회사] 경영지원본부 백오피스부문 직원 채용 공고(마감)", "url": "https://cafe.naver.com/kkbjob/652064", "company": "민트투자자문 주식회사", "posted_at": "2026-10-14", "posted_time": "2026-10-14T12:43:05+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": ["마감", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651878", "source": "kkb", "title": "[마감][유안타증권] 신탁솔루션팀 조합수탁파트 아르바이트 모집", "url": "https://cafe.naver.com/kkbjob/651878", "company": "유안타증권", "posted_at": "2026-10-13", "posted_time": "2026-10-13T07:57:26+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "증권", "level": "알바", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651849", "source": "kkb", "title": "[케이유니콘인베스트먼트] 인턴 모집 공고", "url": "https://cafe.naver.com/kkbjob/651849", "company": "케이유니콘인베스트먼트", "posted_at": "2026-10-12", "posted_time": "2026-10-12T13:08:52+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "info@koreaunicorn.com", "apply_method": "email", "category": "VC", "level": "인턴", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651763", "source": "kkb", "title": "[한국투자신탁운용] 글로벌주식운용부 파트타이머 채용공고 (~10/16)", "url": "https://cafe.naver.com/kkbjob/651763", "company": "한국투자신탁운용", "posted_at": "2026-10-12", "posted_time": "2026-10-12T10:27:03+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-16", "apply_email": "t_recruit@koreainvestment.com", "apply_method": "email", "category": "기타", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651760", "source": "kkb", "title": "[BNK투자증권] 커버리지부 인턴 채용 (~10/15)", "url": "https://cafe.naver.com/kkbjob/651760", "company": "BNK투자증권", "posted_at": "2026-10-12", "posted_time": "2026-10-12T08:35:22+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-15", "apply_email": "wj.yang@bnkfn.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651522", "source": "kkb", "title": "[미래에셋증권 리서치센터 RA 인턴] Quant & ESG (~10.12 월요일)", "url": "https://cafe.naver.com/kkbjob/651522", "company": "두부다", "posted_at": "2026-10-08", "posted_time": "2026-10-08T14:10:23+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-12", "apply_email": "research_recruit@miraeasset.com", "apply_method": "email", "category": "증권", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651449", "source": "kkb", "title": "[미래에셋증권] Equity솔루션본부 PBS팀 아르바이트 채용", "url": "https://cafe.naver.com/kkbjob/651449", "company": "미래에셋증권", "posted_at": "2026-10-07", "posted_time": "2026-10-07T13:16:08+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-14", "apply_email": "yjpark@miraeasset.com", "apply_method": "email", "category": "PE", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651356", "source": "kkb", "title": "[민트투자자문 주식회사] IPO부문 직원 채용 공고(마감)", "url": "https://cafe.naver.com/kkbjob/651356", "company": "민트투자자문 주식회사", "posted_at": "2026-10-06", "posted_time": "2026-10-06T16:44:34+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "", "apply_method": "", "category": "기타", "level": "인턴", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:651350", "source": "kkb", "title": "[라구나인베스트먼트] 경영관리본부(인턴) 채용 공고", "url": "https://cafe.naver.com/kkbjob/651350", "company": "라구나인베스트먼트", "posted_at": "2026-10-06", "posted_time": "2026-10-06T14:43:28+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "recruit@lagunai.com", "apply_method": "email", "category": "VC", "level": "인턴", "front": false, "tags": ["메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650963", "source": "kkb", "title": "[BNK투자증권] ECM부 ECM팀 인턴 채용(~'26.10.05)", "url": "https://cafe.naver.com/kkbjob/650963", "company": "BNK투자증권", "posted_at": "2026-10-01", "posted_time": "2026-10-01T19:53:24+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-05", "apply_email": "thkim@bnkfn.co.kr", "apply_method": "email", "category": "IB", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650929", "source": "kkb", "title": "[LS증권] 체험형인턴 수시채용(리서치(투자전략RA)) (~10/7(수))", "url": "https://cafe.naver.com/kkbjob/650929", "company": "LS증권", "posted_at": "2026-10-01", "posted_time": "2026-10-01T08:38:17+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-07", "apply_email": "recruit@ls-sec.co.kr", "apply_method": "email", "category": "증권", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650857", "source": "kkb", "title": "IMM인베스트먼트 펀드운용2본부 인프라 사무보조 계약직 채용(~10/16)", "url": "https://cafe.naver.com/kkbjob/650857", "company": "IMM인베 인사담당", "posted_at": "2026-09-30", "posted_time": "2026-09-30T16:33:39+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-16", "apply_email": "recruit@imm.co.kr", "apply_method": "email", "category": "VC", "level": "알바", "front": false, "tags": ["메일지원", "백오피스"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650854", "source": "kkb", "title": "[IM증권] 수탁솔루션부 아르바이트 채용 (~10/2 / 마감)", "url": "https://cafe.naver.com/kkbjob/650854", "company": "IM증권", "posted_at": "2026-09-30", "posted_time": "2026-09-30T14:21:59+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-10-02", "apply_email": "", "apply_method": "", "category": "증권", "level": "알바", "front": false, "tags": ["마감"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650707", "source": "kkb", "title": "[NBH캐피탈] 체험형 인턴 채용 공고 (원서접수 마감완료)", "url": "https://cafe.naver.com/kkbjob/650707", "company": "NBH캐피탈", "posted_at": "2026-09-28", "posted_time": "2026-09-28T15:33:18+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "", "apply_email": "gwadmin@nbhcapital.co.kr", "apply_method": "email", "category": "기타", "level": "인턴", "front": true, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:650410", "source": "kkb", "title": "[유안타증권] 신탁솔루션팀 SPC구조화파트 아르바이트 모집(~9/29)", "url": "https://cafe.naver.com/kkbjob/650410", "company": "유안타증권", "posted_at": "2026-09-23", "posted_time": "2026-09-23T16:05:01+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-09-29", "apply_email": "upsooqueen@yuantakorea.com", "apply_method": "email", "category": "증권", "level": "알바", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}, {"id": "kkb:649895", "source": "kkb", "title": "[안다자산운용] Engagement본부 인턴 채용공고", "url": "https://cafe.naver.com/kkbjob/649895", "company": "안다자산운용", "posted_at": "2026-09-18", "posted_time": "2026-09-18T00:22:16+09:00", "first_seen": "2026-11-12T10:17:19+09:00", "deadline": "2026-09-30", "apply_email": "recruit@andaasset.com", "apply_method": "email", "category": "AM", "level": "인턴", "front": false, "tags": ["메일지원"], "source_name": "KKB", "official": false, "also": []}];
+const GENERATED_AT = "2026-11-12T10:17:19+09:00";
+
+const CAT_CLASS = { VC: "VC", PE: "PE", IB: "IB", AM: "AM", "증권": "sec", "M&A자문": "adv", "회계법인": "acct" };
+const CAT_ORDER = ["M&A자문", "IB", "PE", "VC", "AM", "증권", "회계법인", "기타"];
+const SRC_GROUPS = [["home", "회사 홈페이지"], ["kkb", "KKB"], ["kofia", "금투협"], ["kvca", "VC협회"]];
+const srcGroup = p => p.official ? "home" : p.source;
+const LVL = [["인턴", "인턴"], ["알바", "알바·파트타임"]];
+const PERIODS = [["1", "24시간"], ["3", "3일"], ["7", "7일"], ["30", "30일"], ["all", "전체"]];
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const HOUR = 3600000, DAY = 86400000, KST = 9 * HOUR;
+
+// 날짜 계산은 모두 KST 기준. 보는 사람의 시간대와 무관하게 맞도록 UTC 위에서 계산한다.
+const kstDate = ms => new Date(ms + KST).toISOString().slice(0, 10);
+const toUTC = s => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+const diffDays = (a, b) => Math.round((toUTC(a) - toUTC(b)) / DAY);
+const fmtDay = s => { const [, m, d] = s.split("-").map(Number); return `${m}월 ${d}일 (${WEEK[new Date(toUTC(s)).getUTCDay()]})`; };
+const hhmm = ms => new Date(ms + KST).toISOString().slice(11, 16);
+
+let now = Date.now();
+let today = kstDate(now);
+
+const rows = DATA.map(p => {
+  // 올라온 시각: 게시판이 준 시각 → (없으면) 등록일이 수집일과 같을 때 수집 시각(≈) → 등록일 자정
+  let ts, exact = true, dateOnly = false;
+  if (p.posted_time) ts = Date.parse(p.posted_time);
+  else if (p.first_seen && p.first_seen.slice(0, 10) === p.posted_at) { ts = Date.parse(p.first_seen); exact = false; }
+  else { ts = toUTC(p.posted_at || p.first_seen.slice(0, 10)) - KST; dateOnly = true; }
+  const posted = kstDate(ts);
+  return {
+    ...p, ts, exact, dateOnly, posted,
+    cat: CAT_ORDER.includes(p.category) ? p.category : "기타",
+    asap: (p.tags || []).includes("ASAP"),
+    closedTag: (p.tags || []).includes("마감"),
+  };
+});
+
+function derive(p) {
+  p.dd = p.deadline ? diffDays(p.deadline, today) : null;
+  p.closed = p.closedTag || (p.dd !== null && p.dd < 0);
+  p.ageH = (now - p.ts) / HOUR;
+  p.fresh = !p.dateOnly && p.ageH < 24;
+}
+
+const state = { period: "7", cats: new Set(), lvls: new Set(), srcs: new Set(), q: "", sort: "new", hideClosed: true, dealOnly: false, quick: "" };
+try {
+  const s = JSON.parse(localStorage.getItem("intern-board") || "{}");
+  if (s.period) state.period = s.period;
+  if (s.sort) state.sort = s.sort;
+  if (s.dealOnly) state.dealOnly = true;
+} catch (e) {}
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function ago(p) {
+  const pre = p.exact ? "" : "≈";
+  const m = Math.max(0, Math.round((now - p.ts) / 60000));
+  if (m < 60) return `${pre}${m}분 전`;
+  return `${pre}${Math.floor(m / 60)}시간 전`;
+}
+function postedLabel(p) {
+  if (p.fresh) return ago(p);
+  return p.dateOnly ? "–" : hhmm(p.ts);
+}
+function ddLabel(p) {
+  if (p.closed) return "마감";
+  if (p.asap && p.dd === null) return "ASAP";
+  if (p.dd === null) return "채용시";
+  return p.dd === 0 ? "D-DAY" : `D-${p.dd}`;
+}
+function ddClass(p) {
+  if (p.closed) return "text";
+  if (p.asap && p.dd === null) return "hot";
+  if (p.dd === null) return "text";
+  return p.dd <= 2 ? "hot" : p.dd <= 7 ? "soon" : "";
+}
+
+function inPeriod(p) {
+  if (state.period === "all") return true;
+  if (state.period === "1") return p.fresh || p.posted === today;
+  return diffDays(today, p.posted) < Number(state.period);
+}
+function base() {
+  const q = state.q.trim().toLowerCase();
+  return rows.filter(p =>
+    inPeriod(p) &&
+    (!state.hideClosed || !p.closed) &&
+    (!state.dealOnly || p.front) &&
+    (!q || `${p.company} ${p.title}`.toLowerCase().includes(q))
+  );
+}
+function quickOk(p) {
+  switch (state.quick) {
+    case "fresh": return p.fresh;
+    case "mail": return p.apply_method === "email" && !p.closed;
+    case "soon": return !p.closed && ((p.dd !== null && p.dd <= 3) || (p.asap && p.dd === null));
+    default: return true;
+  }
+}
+
+function item(p) {
+  const byTime = state.sort === "new";
+  const key = byTime
+    ? `<div class="key ${p.fresh ? "new" : "text"}">${postedLabel(p)}</div>`
+    : `<div class="key ${ddClass(p)}">${ddLabel(p)}</div>`;
+  const side = byTime
+    ? `<span class="side ${ddClass(p) === "hot" ? "hot" : ""}">${ddLabel(p)}${p.deadline ? ` (~${p.deadline.slice(5).replace("-", "/")})` : ""}</span>`
+    : `<span class="side">${p.fresh ? ago(p) : p.posted.slice(5).replace("-", "/") + (p.dateOnly ? "" : " " + hhmm(p.ts))} 등록</span>`;
+  const apply = p.apply_email
+    ? `<span class="mailtag">메일 지원</span><span class="email"><span>${esc(p.apply_email)}</span><button type="button" class="copy" data-copy="${esc(p.apply_email)}">복사</button></span>`
+    : p.apply_method === "site" ? `<span class="site">홈페이지 지원</span>` : `<span class="site">원문 확인</span>`;
+  return `<article class="item${p.closed ? " closed" : ""}">
+    ${key}
+    <div class="main">
+      <div class="meta">
+        <span class="lvl${p.level === "알바" ? " pt" : ""}">${p.level === "알바" ? "알바·파트" : "인턴"}</span>
+        <span class="cat ${CAT_CLASS[p.cat] || "etc"}">${esc(p.cat)}</span>
+        ${p.front ? `<span class="deal">투자·딜</span>` : ""}
+        <span class="company">${esc(p.company)}</span>
+        <span>·</span><span class="src${p.official ? " official" : ""}">${esc(p.source_name || p.source)}</span>
+        <span>·</span>${side}
+      </div>
+      <a class="title" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+      ${(p.also || []).length ? `<div class="also"><span>같은 공고:</span>${p.also.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.source)}</a>`).join("")}</div>` : ""}
+    </div>
+    <div class="apply">${apply}</div>
+  </article>`;
+}
+
+function chipRow(el, items, active, onToggle, counts) {
+  el.innerHTML = "";
+  for (const [val, label] of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip";
+    b.setAttribute("aria-pressed", active(val));
+    b.innerHTML = counts ? `${esc(label)}<span class="n">${counts[val] || 0}</span>` : esc(label);
+    b.onclick = () => onToggle(val);
+    el.appendChild(b);
+  }
+}
+const toggleSet = set => v => { set.has(v) ? set.delete(v) : set.add(v); render(); };
+
+function render() {
+  now = Date.now(); today = kstDate(now);
+  rows.forEach(derive);
+  try { localStorage.setItem("intern-board", JSON.stringify({ period: state.period, sort: state.sort, dealOnly: state.dealOnly })); } catch (e) {}
+
+  const b = base();
+  const open = rows.filter(p => !p.closed && (!state.dealOnly || p.front));
+  document.getElementById("s-fresh").textContent = open.filter(p => p.fresh).length;
+  document.getElementById("s-mail").textContent = open.filter(p => p.apply_method === "email" && inPeriod(p)).length;
+  document.getElementById("s-soon").textContent = open.filter(p => (p.dd !== null && p.dd <= 3) || (p.asap && p.dd === null)).length;
+  document.getElementById("s-open").textContent = open.length;
+  document.querySelectorAll(".summary button").forEach(x => x.setAttribute("aria-pressed", !!x.dataset.quick && x.dataset.quick === state.quick));
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x.dataset.sort === state.sort));
+
+  const cc = {}, lc = {}, sc = {};
+  b.forEach(p => { cc[p.cat] = (cc[p.cat] || 0) + 1; lc[p.level] = (lc[p.level] || 0) + 1; sc[srcGroup(p)] = (sc[srcGroup(p)] || 0) + 1; });
+  chipRow(document.getElementById("f-period"), PERIODS, v => state.period === v, v => { state.period = v; render(); });
+  chipRow(document.getElementById("f-lvl"), LVL, v => state.lvls.has(v), toggleSet(state.lvls), lc);
+  chipRow(document.getElementById("f-cat"), CAT_ORDER.map(c => [c, c]), v => state.cats.has(v), toggleSet(state.cats), cc);
+  chipRow(document.getElementById("f-src"), SRC_GROUPS, v => state.srcs.has(v), toggleSet(state.srcs), sc);
+
+  const list = b.filter(p =>
+    (!state.cats.size || state.cats.has(p.cat)) &&
+    (!state.lvls.size || state.lvls.has(p.level)) &&
+    (!state.srcs.size || state.srcs.has(srcGroup(p))) &&
+    quickOk(p)
+  );
+  const out = document.getElementById("out");
+  document.getElementById("count").textContent = `공고 ${list.length}건`;
+  if (!list.length) {
+    out.innerHTML = `<div class="empty">조건에 맞는 공고가 없습니다. 기간을 넓히거나 필터를 해제해 보세요.</div>`;
+    return;
+  }
+
+  if (state.sort === "due") {
+    // ASAP(마감일 없음) → 마감일 가까운 순 → 채용시 마감(최근 등록순) → 마감된 공고
+    const rank = p => p.closed ? 3 : (p.asap && p.dd === null) ? 0 : p.dd !== null ? 1 : 2;
+    list.sort((a, b) => rank(a) - rank(b) || (a.dd ?? 0) - (b.dd ?? 0) || b.ts - a.ts);
+    out.innerHTML = `<div class="list">${list.map(item).join("")}</div>`;
+    return;
+  }
+
+  list.sort((a, b) => b.ts - a.ts);
+  const fresh = list.filter(p => p.fresh);
+  const groups = new Map();
+  list.filter(p => !p.fresh).forEach(p => { if (!groups.has(p.posted)) groups.set(p.posted, []); groups.get(p.posted).push(p); });
+  let html = "";
+  if (fresh.length) html += `<section class="day fresh"><h2><span class="d">최근 24시간</span><span>${fresh.length}건 · 빨리 보낼수록 유리</span></h2><div class="list">${fresh.map(item).join("")}</div></section>`;
+  for (const [d, ps] of groups) {
+    const n = diffDays(today, d);
+    const rel = n === 0 ? "오늘" : n === 1 ? "어제" : `${n}일 전`;
+    html += `<section class="day"><h2><span class="d">${fmtDay(d)}</span><span>${rel} · ${ps.length}건</span></h2><div class="list">${ps.map(item).join("")}</div></section>`;
+  }
+  out.innerHTML = html;
+}
+
+document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
+document.getElementById("hide-closed").addEventListener("change", e => { state.hideClosed = e.target.checked; render(); });
+document.getElementById("deal-only").checked = state.dealOnly;
+document.getElementById("deal-only").addEventListener("change", e => { state.dealOnly = e.target.checked; render(); });
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => { state.sort = b.dataset.sort; render(); }));
+document.querySelectorAll(".summary button").forEach(b => b.addEventListener("click", () => {
+  const q = b.dataset.quick;
+  state.quick = q && state.quick !== q ? q : "";
+  if (q === "soon") state.sort = "due";
+  if (q === "fresh") state.sort = "new";
+  render();
+}));
+document.getElementById("out").addEventListener("click", e => {
+  const b = e.target.closest(".copy");
+  if (!b) return;
+  const done = () => { b.textContent = "복사됨"; setTimeout(() => (b.textContent = "복사"), 1400); };
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done, fallback); else fallback();
+});
+
+const gen = Date.parse(GENERATED_AT);
+document.getElementById("asof").textContent = `${fmtDay(kstDate(gen))} ${hhmm(gen)}`;
+const lag = (Date.now() - gen) / HOUR;
+if (lag > 6) { const st = document.getElementById("stale"); st.hidden = false; st.textContent = `${Math.floor(lag)}시간 동안 갱신 안 됨`; }
+render();
+setInterval(render, 60000);
+</script>
